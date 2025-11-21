@@ -26,12 +26,19 @@ comparsion.py: 比較分析與效能評測
 產出: performance_metrics.json
 
 ==================🚀 套件版本==================
+
 Python version: 3.12.12
+
 google-generativeai version: 0.8.5
+
 pandas version: 2.2.2
+
 jieba version: 0.42.1
+
 pandas version: 2.2.2
+
 numpy version: 2.0.2
+
 
 ==================💻 執行說明==================
 請依序執行以下指令：
