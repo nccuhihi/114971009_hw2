@@ -24,6 +24,7 @@ import json
 import math
 import re
 import sys
+import os
 from collections import Counter
 
 # 2. 顯示套件版本
@@ -59,13 +60,12 @@ long_text_example = """
 深度學習的好處是用非監督式或半監督式的特徵學習和分層特徵提取高效算法來替代手工獲取特徵。
 """
 
-# 4. 重現 A 與 B 的邏輯以進行計時
+# 4. 重現 A 與 B 的邏輯 (為了計時與生成比較檔)
 def calculate_tfidf_similarity_lite(doc1, doc2, corpus):
     def get_tf(words): return {w: words.count(w)/len(words) for w in words}
     w1, w2 = jieba.lcut(doc1), jieba.lcut(doc2)
     corpus_tokens = [jieba.lcut(d) for d in corpus]
-    all_w = set(w for d in corpus_tokens for w in d)
-    return 0.0
+    return 0.0 
 
 class RuleClassifierLite:
     def analyze(self, text):
@@ -73,17 +73,32 @@ class RuleClassifierLite:
         return "正面", "科技"
 
 class SummarizerLite:
-    def summarize(self, text):
-        _ = jieba.lcut(text)
-        return text[:10]
+    def __init__(self):
+        self.stops = set(['的', '了', '是', '在', '也', '就', '都'])
+    
+    def summarize(self, text, top_k=2):
+        sents = [s.strip() for s in re.split(r'(?<=[。！？])', text) if len(s.strip())>5]
+        words = [w for s in sents for w in jieba.lcut(s) if w not in self.stops]
+        freq = Counter(words)
+        scores = []
+        for s in sents:
+            ws = [w for w in jieba.lcut(s) if w not in self.stops]
+            sc = sum(freq[w] for w in ws) / (len(ws) if ws else 1)
+            scores.append((sc, s))
+        top = sorted(scores, key=lambda x:x[0], reverse=True)[:top_k]
+        selected = [x[1] for x in top]
+        return "".join([s for s in sents if s in selected])
 
 # Part B API 設定
 print("=== Part C: 比較分析報告 ===")
+api_key = os.getenv("GEMINI_API_KEY")
+if not api_key:
+    api_key = "請在此填入您的_GEMINI_API_KEY"
+
 try:
-    api_key = userdata.get('AI')
     genai.configure(api_key=api_key)
     model_gen = genai.GenerativeModel('gemini-2.5-flash-lite')
-    print("\n✅ API Key 設定成功 (用於效能對照)")
+    print("\n✅ API Key 設定嘗試完成")
 except Exception as e:
     print(f"\n❌ API Key 設定失敗: {e}")
     model_gen = None
@@ -92,7 +107,7 @@ def get_embedding_lite(text):
     try: return genai.embed_content(model="models/text-embedding-004", content=text)['embedding']
     except: return []
 
-# --- 5. 執行效能評測 ---
+# --- 5. 執行效能評測與檔案生成 ---
 metrics_data = {
     "Similarity": {},
     "Classification": {},
@@ -122,7 +137,7 @@ for t in test_texts: clf.analyze(t)
 time_a2 = time.time()-t0
 
 t0 = time.time()
-if model_gen:
+if model_gen: 
     try: model_gen.generate_content("test")
     except: pass
 time_b2 = time.time()-t0
@@ -132,16 +147,20 @@ metrics_data["Classification"] = {
     "GenAI_Time": time_b2
 }
 
-# (3) 摘要評測
+# (3) 摘要評測與比較檔生成 (Requirement: summarization_comparison.txt)
 summ = SummarizerLite()
 t0 = time.time()
-summ.summarize(long_text_example)
+summary_a = summ.summarize(long_text_example)
 time_a3 = time.time()-t0
 
 t0 = time.time()
+summary_b = ""
 if model_gen:
-    try: model_gen.generate_content(f"Sum: {long_text_example}")
-    except: pass
+    try: 
+        prompt_sum = f"請用生成式摘要技術改寫以下文本，約50-80字，需含AI定義與深度學習重點:\n{long_text_example}"
+        summary_b = model_gen.generate_content(prompt_sum).text.strip()
+    except: 
+        summary_b = "(API 呼叫失敗)"
 time_b3 = time.time()-t0
 
 metrics_data["Summarization"] = {
@@ -149,14 +168,39 @@ metrics_data["Summarization"] = {
     "GenAI_Time": time_b3
 }
 
+# 生成 summarization_comparison.txt
+comparison_content = f"""=== 自動摘要結果比較 ===
+
+【原文】
+{long_text_example}
+
+--------------------------------------------------
+
+【傳統方法 (統計式 - Part A)】
+- 方法：TF-IDF / 詞頻選句 (Extractive)
+- 結果：
+{summary_a}
+
+--------------------------------------------------
+
+【現代 AI 方法 (生成式 - Part B)】
+- 方法：LLM 改寫 (Abstractive)
+- 結果：
+{summary_b}
+
+--------------------------------------------------
+"""
+
+with open("summarization_comparison.txt", "w", encoding="utf-8") as f:
+    f.write(comparison_content)
+print("✅ 已生成 'summarization_comparison.txt'")
+
 # 生成 performance_metrics.json
 with open('performance_metrics.json', 'w', encoding='utf-8') as f:
     json.dump(metrics_data, f, ensure_ascii=False, indent=4)
 print("✅ 已生成 'performance_metrics.json'")
 
 # --- 6. 生成比較分析表格 ---
-# 依據要求包含: 處理時間、準確率/合理性、成本、準確率、支援類別數、語句通順度、資訊保留度
-
 table_data = {
     "Task": [
         "相似度計算", "相似度計算", "相似度計算",
@@ -169,19 +213,13 @@ table_data = {
         "處理時間 (秒)", "語句通順度", "資訊保留度"
     ],
     "Traditional (TF-IDF/Rule)": [
-        # 相似度
         f"{time_a1:.5f}", "高 (數學精確)", "極低 (本地計算)",
-        # 分類
         f"{time_a2:.5f}", "中 (依賴關鍵字)", "有限 (需人工定義)",
-        # 摘要
         f"{time_a3:.5f}", "低 (句子拼接)", "中 (關鍵句選取)"
     ],
     "Modern (GenAI)": [
-        # 相似度
         f"{time_b1:.5f}", "極高 (語意理解)", "中 (API 費用)",
-        # 分類
         f"{time_b2:.2f}", "極高 (Zero-shot)", "無限 (可任意指定)",
-        # 摘要
         f"{time_b3:.2f}", "高 (流暢改寫)", "高 (融會貫通)"
     ]
 }
