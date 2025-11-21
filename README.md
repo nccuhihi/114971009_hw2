@@ -64,6 +64,8 @@ numpy version: 2.0.2
 
 
 ==================📊 產出檔案說明==================
+
+
 執行完畢後，您將獲得以下檔案：
 
 tradtional_methods：文件間的 TF-IDF 餘弦相似度矩陣，產出tfidf_similarity_matrix.csv。
