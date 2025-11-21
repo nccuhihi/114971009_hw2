@@ -30,29 +30,29 @@ comparsion.py: 比較分析與效能評測
 
 步驟 1：執行 Part A (傳統方法)
 
-此步驟不需要 API Key，將使用本機運算。
+  此步驟不需要 API Key，將使用本機運算。
 
-python tradtional_methods.py
+  python tradtional_methods.py
 
-執行結果：終端機將顯示 TF-IDF 關鍵詞分析、規則分類結果，並於目錄下生成 tfidf_similarity_matrix.csv。
+  執行結果：終端機將顯示 TF-IDF 關鍵詞分析、規則分類結果，並於目錄下生成 tfidf_similarity_matrix.csv。
 
 
 步驟 2：執行 Part B (現代 AI)
 
-此步驟需要有效的 API Key。
+  此步驟需要有效的 API Key。
 
-python modern_method.py
+  python modern_method.py
 
-執行結果：將呼叫 Gemini API 進行 Embeddings 計算與分類，並於目錄下生成 classification_result.csv (包含情感、主題與信心分數)。
+  執行結果：將呼叫 Gemini API 進行 Embeddings 計算與分類，並於目錄下生成 classification_result.csv (包含情感、主題與信心分數)。
 
 
 步驟 3：執行 Part C (評測報告)
 
-此步驟進行效能計時與比較。
+  此步驟進行效能計時與比較。
 
-python part_c.py
+  python part_c.py
 
-執行結果：終端機將顯示完整的比較分析表格，並於目錄下生成 performance_metrics.json (包含詳細的時間與效能數據)。
+  執行結果：終端機將顯示完整的比較分析表格，並於目錄下生成 performance_metrics.json (包含詳細的時間與效能數據)。
 
 
 📊 產出檔案說明
