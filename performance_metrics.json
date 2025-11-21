@@ -1,0 +1,14 @@
+{
+    "Similarity": {
+        "Traditional_Time": 0.0013431787490844726,
+        "GenAI_Time": 0.0025284290313720703
+    },
+    "Classification": {
+        "Traditional_Time": 0.0011322498321533203,
+        "GenAI_Time": 0.002245187759399414
+    },
+    "Summarization": {
+        "Traditional_Time": 0.0058748722076416016,
+        "GenAI_Time": 0.002053976058959961
+    }
+}
